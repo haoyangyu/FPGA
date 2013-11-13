@@ -23,6 +23,7 @@ end processor;
 
 architecture structure of processor is
 
+--The component of altera IP codes
 COMPONENT altera_UP_sram
 	PORT (
 	-- Inputs
@@ -64,19 +65,21 @@ component bcd7seg
 end component;
 
 --define the component of program_counter
+
 component program_counter is
 	port( increment_flag: in std_logic;
-			new_count: out std_logic_vector(3 downto 0);
-			old_count: in std_logic_vector(3 downto 0)
+			old_count: in std_logic_vector(3 downto 0);
+			new_count: out std_logic_vector(3 downto 0)
 	);
 end component;
+
 
 --*******************************Signal Part*********************************************************--
    type count_state is (fetch, decode, execute, memory_write);
 	type ADDR_array is array (1 downto 0) of STD_LOGIC_VECTOR(4 downto 0);
 	type Data_array is array (2 downto 0) of STD_LOGIC_VECTOR(15 downto 0);
 	
-	--Define the waht the state is now of present_state and next_state
+	--Define the what the state is now of present_state and next_state
 	signal present_state, next_state : count_state;
 	signal address_array: ADDR_array;
 	signal datas_array: Data_array;
@@ -88,27 +91,28 @@ end component;
 	signal address: std_logic_vector(19 downto 0);
 	signal byteenable: std_logic_vector(1 downto 0):="01"; --make the all the 16-bits data available
 	signal writedata,
-			 readdata: std_logic_vector(15 downto 0);
-	signal is_decode,
-		  	 is_execute,			
-			 is_memory_write,
-			 is_write,
-			 is_read :std_logic;
+		   readdata: std_logic_vector(15 downto 0);
+	signal is_write,
+		   is_read :std_logic;
 	signal readdatavalid: std_logic; 
 	signal intermediate1Data,
-			 intermediate2Data: STD_LOGIC_VECTOR(15 downto 0);
-	signal intermediate1Hexdisplay,
-			 intermediate2Hexdisplay,
-			 intermediate3Hexdisplay,
-			 intermediate4Hexdisplay: std_logic_vector(7 downto 0);
-	signal display7, display6, display5, display4, display3, display2, display1, display0 : STD_LOGIC_VECTOR(0 TO 6);
+		   intermediate2Data: STD_LOGIC_VECTOR(15 downto 0);
+	--intermediateHexdisplay to store 
+	signal  intermediate1Hexdisplay,
+			intermediate2Hexdisplay,
+			intermediate3Hexdisplay,
+			intermediate4Hexdisplay: std_logic_vector(7 downto 0);
+	--the displayX used to as intermediate
+	signal display7, display6, display5, display4, display3, display2, display0 : STD_LOGIC_VECTOR(0 TO 6);
+	--Transfer 16 bits to 8 bits
 	signal inter8bitData1,
 			 inter8bitData2: std_logic_vector(7 downto 0);
 	signal ALU_output: std_logic_vector(15 downto 0);
-	signal counter: integer range 0 to 101 :=0;
+	signal counter: integer range 0 to 501 :=0;
 	
 	signal increment_flag: std_logic;
-	signal old_count, new_count: std_logic_vector(3 downto 0):="0000";
+	signal old_count: std_logic_vector(3 downto 0);
+	signal new_count: std_logic_vector(3 downto 0);
 	
 --***************************************************************************************************--
 --the main part of the processor architecture
@@ -124,7 +128,7 @@ begin
 		end if;
 	end process;
 	
-	process(present_state, instruction, reset, SW)
+	process(present_state, CLOCK_50)
 	begin
 		case present_state is
 			when fetch=>
@@ -141,7 +145,6 @@ begin
 				old_count <= new_count;
 				next_state<=decode;
 			when decode=>
-				is_decode<='0';
 				--Let the LEDG3-LEDG0 display the the current state
 				LEDG(3)<='0';
 				LEDG(2)<='1';
@@ -169,7 +172,7 @@ begin
 					datas_array(1)<=readdata;
 				end if;
 					
-				if (counter=100) then 
+				if (counter=500) then 
 					address<="000000000000000"&address_array(0);
 					datas_array(0)<=readdata;					
 				end if;	
@@ -321,21 +324,25 @@ use ieee.numeric_std.all;
 
 entity program_counter is
 	port( increment_flag: in std_logic;
-			new_count: out std_logic_vector(3 downto 0);
-			old_count: in std_logic_vector(3 downto 0)
+			old_count: in std_logic_vector(3 downto 0);
+			new_count: out std_logic_vector(3 downto 0)
 	);
 end program_counter;
 
 architecture behave of program_counter is 
+
+signal temp : std_LOGIC_VECTOR (3 downto 0) := "0000";
+
 begin 
+
 	process(increment_flag)
 	begin
-		if increment_flag='1' then 
-			new_count<=std_LOGIC_VECTOR(signed(old_count)+1);
-		else 
-			new_count<=old_count;		
+		if increment_flag='1' then
+			temp<=std_logic_vector(signed(old_count)+1);
 		end if;
 	end process;
+	
+	new_count <= temp;
 end behave;
 
 
